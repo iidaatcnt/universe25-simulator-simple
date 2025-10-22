@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Universe25 Simulator - Simple</title>
+
+    <!-- スタイルシート -->
+    <link rel="stylesheet" href="style.css">
+
+    <!-- Chart.js ライブラリ（グラフ描画用） -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <!-- ヘッダー -->
+    <header>
+        <h1>Universe25 Simulator</h1>
+        <p>ジョン・B・カルフーンの楽園実験シミュレーター</p>
+    </header>
+
+    <!-- メインコンテンツ -->
+    <main class="container">
+        <!-- 左側: 環境ビュー -->
+        <section class="left-panel">
+            <h2>環境ビュー</h2>
+            <div class="canvas-container">
+                <canvas id="environmentCanvas" width="600" height="600"></canvas>
+            </div>
+            <div class="canvas-info">
+                <p>2.7m × 2.7m の楽園空間</p>
+                <div class="legend">
+                    <div class="legend-item">
+                        <span class="legend-color normal"></span>
+                        <span>正常個体</span>
+                    </div>
+                    <div class="legend-item">
+                        <span class="legend-color beautiful"></span>
+                        <span>美しき者</span>
+                    </div>
+                    <div class="legend-item">
+                        <span class="legend-color aggressive"></span>
+                        <span>攻撃的個体</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 右側: データビュー -->
+        <section class="right-panel">
+            <!-- コントロールパネル -->
+            <div class="control-panel">
+                <h2>コントロール</h2>
+                <div class="controls">
+                    <button id="startBtn" class="btn btn-start">開始</button>
+                    <button id="pauseBtn" class="btn btn-pause" disabled>停止</button>
+                    <button id="resetBtn" class="btn btn-reset">リセット</button>
+                </div>
+                <div class="speed-control">
+                    <label for="speedSlider">速度: <span id="speedValue">1.0x</span></label>
+                    <input type="range" id="speedSlider" min="0.5" max="5" step="0.5" value="1">
+                </div>
+            </div>
+
+            <!-- 統計情報 -->
+            <div class="stats-panel">
+                <h2>統計情報</h2>
+                <div class="stats-grid">
+                    <div class="stat-item">
+                        <div class="stat-label">経過日数</div>
+                        <div class="stat-value" id="dayCount">0</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-label">総個体数</div>
+                        <div class="stat-value" id="totalPopulation">8</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-label">正常個体</div>
+                        <div class="stat-value" id="normalPopulation">8</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-label">美しき者</div>
+                        <div class="stat-value" id="beautifulPopulation">0</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-label">攻撃的個体</div>
+                        <div class="stat-value" id="aggressivePopulation">0</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-label">出生率</div>
+                        <div class="stat-value" id="birthRate">100%</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-label">密度</div>
+                        <div class="stat-value" id="density">0.3%</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-label">1日の出生数</div>
+                        <div class="stat-value" id="dailyBirths">0</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- フェーズ表示 -->
+            <div class="phase-panel">
+                <h2>現在のフェーズ</h2>
+                <div id="phaseIndicator" class="phase-indicator phase-a">
+                    Phase A: 適応期
+                </div>
+                <p id="phaseDescription" class="phase-description">
+                    環境に適応し、順調に繁殖が始まります。
+                </p>
+            </div>
+
+            <!-- グラフ -->
+            <div class="chart-panel">
+                <h2>個体数の推移</h2>
+                <canvas id="populationChart"></canvas>
+            </div>
+
+            <div class="chart-panel">
+                <h2>出生率の推移</h2>
+                <canvas id="birthRateChart"></canvas>
+            </div>
+        </section>
+    </main>
+
+    <!-- フッター -->
+    <footer>
+        <p>Universe25 Simulator - Simple | Based on John B. Calhoun's experiment (1968-1972)</p>
+        <p><a href="https://github.com/iidaatcnt/universe25-simulator-simple" target="_blank">GitHub Repository</a></p>
+    </footer>
+
+    <!-- JavaScriptファイル -->
+    <script src="script.js"></script>
+</body>
+</html>
