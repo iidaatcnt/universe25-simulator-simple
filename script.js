@@ -20,7 +20,7 @@ let simulation = {
     currentDensity: 0,          // 現在の密度（0-1）
     socialStress: 0,            // 社会的ストレス（0-1）
     birthRate: 1.0,             // 出生率（0-1）
-    deathRate: 0.001,           // 基本死亡率
+    deathRate: 0.002,           // 基本死亡率（Phase Dでの絶滅を促進）
     dailyBirths: 0,             // 1日の出生数
 
     // 履歴データ（グラフ用）
@@ -372,7 +372,9 @@ function updatePhase() {
         phaseClass = 'phase-d';
         description = '出生率が極端に低下しています。楽園にもかかわらず、なぜでしょうか？';
         // Phase Dでは出生率が劇的に低下（ストレスが高いとほぼ0%に）
-        simulation.birthRate = 0.02 * Math.pow(1 - simulation.socialStress, 3);
+        // 正常個体の割合も考慮（正常個体が少ないと繁殖できない）
+        const normalRatio = simulation.population.normal / Math.max(1, getTotalPopulation());
+        simulation.birthRate = 0.01 * Math.pow(1 - simulation.socialStress, 3) * Math.pow(normalRatio, 2);
     }
 
     // フェーズ表示を更新
@@ -417,13 +419,13 @@ function calculateBirths() {
         let aggressiveThreshold = 0.15;
 
         if (simulation.day > 560) {
-            // Phase D: 異常個体が生まれやすい
-            beautifulThreshold = 0.6;
-            aggressiveThreshold = 0.25;
+            // Phase D: ほぼ全てが異常個体として誕生（正常個体は5%のみ）
+            beautifulThreshold = 0.75;
+            aggressiveThreshold = 0.2;
         } else if (simulation.day > 315) {
             // Phase C: やや異常個体が増える
-            beautifulThreshold = 0.45;
-            aggressiveThreshold = 0.2;
+            beautifulThreshold = 0.5;
+            aggressiveThreshold = 0.25;
         }
 
         if (simulation.currentDensity > 0.6 && rand < beautifulThreshold) {
@@ -452,9 +454,10 @@ function calculateDeaths() {
 
     // Phase Dでは死亡率がさらに増加
     if (simulation.day > 560) {
-        stressMultiplier = 1 + simulation.socialStress * 10;
+        // Phase Dでは死亡率を大幅に上げて個体数を減少させる
+        stressMultiplier = 1 + simulation.socialStress * 15;
     } else if (simulation.day > 315) {
-        stressMultiplier = 1 + simulation.socialStress * 7;
+        stressMultiplier = 1 + simulation.socialStress * 8;
     }
 
     const stressDeathRate = simulation.deathRate * stressMultiplier;
@@ -464,13 +467,13 @@ function calculateDeaths() {
     simulation.population.normal = Math.max(0, simulation.population.normal - normalDeaths);
 
     // 美しき者の死亡（繁殖しないため、高い死亡率）
-    // Phase Dでは自己ケアのみで生存能力が低下
-    const beautifulMultiplier = simulation.day > 560 ? 1.5 : 1.2;
+    // Phase Dでは自己ケアのみで生存能力が低下し、徐々に死滅
+    const beautifulMultiplier = simulation.day > 560 ? 2.5 : 1.2;
     const beautifulDeaths = Math.floor(simulation.population.beautiful * stressDeathRate * beautifulMultiplier);
     simulation.population.beautiful = Math.max(0, simulation.population.beautiful - beautifulDeaths);
 
     // 攻撃的個体の死亡（争いで死ぬこともある）
-    const aggressiveMultiplier = simulation.day > 560 ? 2.0 : 1.5;
+    const aggressiveMultiplier = simulation.day > 560 ? 3.0 : 1.5;
     const aggressiveDeaths = Math.floor(simulation.population.aggressive * stressDeathRate * aggressiveMultiplier);
     simulation.population.aggressive = Math.max(0, simulation.population.aggressive - aggressiveDeaths);
 }
@@ -481,17 +484,18 @@ function calculateDeaths() {
 // ===================================
 
 function updateBehaviors() {
-    // 密度が50%を超えると、正常個体が異常化し始める
-    if (simulation.currentDensity > 0.5) {
+    // 密度が40%を超えると、正常個体が異常化し始める
+    if (simulation.currentDensity > 0.4) {
         // Phase Dでは転換率が劇的に増加
         let baseConversionRate = 0.005 * simulation.socialStress;
 
         if (simulation.day > 560) {
-            // Phase Dでは正常個体が急速に「美しき者」や攻撃的個体に変化
-            baseConversionRate = 0.02 * simulation.socialStress;
+            // Phase Dでは正常個体のほぼ全てが「美しき者」や攻撃的個体に変化
+            // カルフーンの実験では、最終的に正常個体がほぼ全滅
+            baseConversionRate = 0.08 * Math.pow(simulation.socialStress, 0.5);
         } else if (simulation.day > 315) {
             // Phase Cでも転換率を上げる
-            baseConversionRate = 0.01 * simulation.socialStress;
+            baseConversionRate = 0.025 * simulation.socialStress;
         }
 
         const conversions = Math.floor(simulation.population.normal * baseConversionRate);
@@ -500,8 +504,8 @@ function updateBehaviors() {
             if (simulation.population.normal > 0) {
                 simulation.population.normal--;
 
-                // Phase Dでは「美しき者」の出現率が高い（80%）
-                const beautifulProbability = simulation.day > 560 ? 0.8 : 0.65;
+                // Phase Dでは「美しき者」の出現率が非常に高い（90%）
+                const beautifulProbability = simulation.day > 560 ? 0.9 : 0.7;
 
                 if (Math.random() < beautifulProbability) {
                     simulation.population.beautiful++;
