@@ -349,14 +349,16 @@ function updatePhase() {
         phaseName = 'Phase A: 適応期';
         phaseClass = 'phase-a';
         description = '環境に適応し、順調に繁殖が始まります。';
-        simulation.birthRate = 1.0;
+        // Phase Aは適応期なので、出生率は控えめに（徐々に上昇）
+        simulation.birthRate = 0.6 + (simulation.day / 104) * 0.4; // 0.6から1.0に徐々に上昇
 
     } else if (simulation.day <= 315) {
         // Phase B: 成長期
         phaseName = 'Phase B: 成長期';
         phaseClass = 'phase-b';
         description = '豊富な資源により、個体数が急増しています。社会階層が形成されています。';
-        simulation.birthRate = 0.9;
+        // Phase Bで最も高い出生率（ピーク成長期）
+        simulation.birthRate = 1.2;
 
     } else if (simulation.day <= 560) {
         // Phase C: 停滞期
@@ -399,8 +401,8 @@ function calculateBirths() {
         return;
     }
 
-    // 基本出生率: 正常個体の15%が1日で繁殖可能
-    const baseBirthRate = 0.15;
+    // 基本出生率: 正常個体の5%が1日で繁殖可能（現実的な値に調整）
+    const baseBirthRate = 0.05;
 
     // 実効出生率 = 基本出生率 × フェーズ補正 × (1 - ストレス)
     const effectiveBirthRate = baseBirthRate * simulation.birthRate * (1 - simulation.socialStress);
