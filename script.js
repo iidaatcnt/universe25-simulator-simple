@@ -363,14 +363,16 @@ function updatePhase() {
         phaseName = 'Phase C: 停滞期';
         phaseClass = 'phase-c';
         description = '過密により社会行動が崩壊し始めています。攻撃性が高まり、異常行動が増えています。';
-        simulation.birthRate = 0.5 * (1 - simulation.socialStress);
+        // 密度が上がるほど出生率が激減
+        simulation.birthRate = 0.4 * Math.pow(1 - simulation.socialStress, 2);
 
     } else {
         // Phase D: 死滅期
         phaseName = 'Phase D: 死滅期';
         phaseClass = 'phase-d';
         description = '出生率が極端に低下しています。楽園にもかかわらず、なぜでしょうか？';
-        simulation.birthRate = 0.1 * (1 - simulation.socialStress);
+        // Phase Dでは出生率が劇的に低下（ストレスが高いとほぼ0%に）
+        simulation.birthRate = 0.02 * Math.pow(1 - simulation.socialStress, 3);
     }
 
     // フェーズ表示を更新
@@ -410,11 +412,25 @@ function calculateBirths() {
         const rand = Math.random();
 
         // 密度が高いほど異常個体が生まれやすい
-        if (simulation.currentDensity > 0.7 && rand < 0.3) {
+        // Phase Dでは異常個体の出生率がさらに高まる
+        let beautifulThreshold = 0.3;
+        let aggressiveThreshold = 0.15;
+
+        if (simulation.day > 560) {
+            // Phase D: 異常個体が生まれやすい
+            beautifulThreshold = 0.6;
+            aggressiveThreshold = 0.25;
+        } else if (simulation.day > 315) {
+            // Phase C: やや異常個体が増える
+            beautifulThreshold = 0.45;
+            aggressiveThreshold = 0.2;
+        }
+
+        if (simulation.currentDensity > 0.6 && rand < beautifulThreshold) {
             // 美しき者が生まれる
             simulation.population.beautiful++;
 
-        } else if (simulation.currentDensity > 0.5 && rand < 0.15) {
+        } else if (simulation.currentDensity > 0.5 && rand < beautifulThreshold + aggressiveThreshold) {
             // 攻撃的個体が生まれる
             simulation.population.aggressive++;
 
@@ -432,18 +448,30 @@ function calculateBirths() {
 
 function calculateDeaths() {
     // ストレスによる死亡率増加
-    const stressDeathRate = simulation.deathRate * (1 + simulation.socialStress * 5);
+    let stressMultiplier = 1 + simulation.socialStress * 5;
+
+    // Phase Dでは死亡率がさらに増加
+    if (simulation.day > 560) {
+        stressMultiplier = 1 + simulation.socialStress * 10;
+    } else if (simulation.day > 315) {
+        stressMultiplier = 1 + simulation.socialStress * 7;
+    }
+
+    const stressDeathRate = simulation.deathRate * stressMultiplier;
 
     // 正常個体の死亡
     const normalDeaths = Math.floor(simulation.population.normal * stressDeathRate);
     simulation.population.normal = Math.max(0, simulation.population.normal - normalDeaths);
 
-    // 美しき者の死亡（繁殖しないため、やや高い死亡率）
-    const beautifulDeaths = Math.floor(simulation.population.beautiful * stressDeathRate * 1.2);
+    // 美しき者の死亡（繁殖しないため、高い死亡率）
+    // Phase Dでは自己ケアのみで生存能力が低下
+    const beautifulMultiplier = simulation.day > 560 ? 1.5 : 1.2;
+    const beautifulDeaths = Math.floor(simulation.population.beautiful * stressDeathRate * beautifulMultiplier);
     simulation.population.beautiful = Math.max(0, simulation.population.beautiful - beautifulDeaths);
 
     // 攻撃的個体の死亡（争いで死ぬこともある）
-    const aggressiveDeaths = Math.floor(simulation.population.aggressive * stressDeathRate * 1.5);
+    const aggressiveMultiplier = simulation.day > 560 ? 2.0 : 1.5;
+    const aggressiveDeaths = Math.floor(simulation.population.aggressive * stressDeathRate * aggressiveMultiplier);
     simulation.population.aggressive = Math.max(0, simulation.population.aggressive - aggressiveDeaths);
 }
 
@@ -453,17 +481,29 @@ function calculateDeaths() {
 // ===================================
 
 function updateBehaviors() {
-    // 密度が60%を超えると、正常個体が異常化し始める
-    if (simulation.currentDensity > 0.6) {
-        const conversionRate = 0.001 * simulation.socialStress;
-        const conversions = Math.floor(simulation.population.normal * conversionRate);
+    // 密度が50%を超えると、正常個体が異常化し始める
+    if (simulation.currentDensity > 0.5) {
+        // Phase Dでは転換率が劇的に増加
+        let baseConversionRate = 0.005 * simulation.socialStress;
+
+        if (simulation.day > 560) {
+            // Phase Dでは正常個体が急速に「美しき者」や攻撃的個体に変化
+            baseConversionRate = 0.02 * simulation.socialStress;
+        } else if (simulation.day > 315) {
+            // Phase Cでも転換率を上げる
+            baseConversionRate = 0.01 * simulation.socialStress;
+        }
+
+        const conversions = Math.floor(simulation.population.normal * baseConversionRate);
 
         for (let i = 0; i < conversions; i++) {
             if (simulation.population.normal > 0) {
                 simulation.population.normal--;
 
-                // 60%の確率で美しき者、40%で攻撃的個体
-                if (Math.random() < 0.6) {
+                // Phase Dでは「美しき者」の出現率が高い（80%）
+                const beautifulProbability = simulation.day > 560 ? 0.8 : 0.65;
+
+                if (Math.random() < beautifulProbability) {
                     simulation.population.beautiful++;
                 } else {
                     simulation.population.aggressive++;
